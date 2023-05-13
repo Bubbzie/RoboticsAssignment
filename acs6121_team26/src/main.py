@@ -3,6 +3,8 @@
 from os import P_NOWAITO
 import rospy
 import os
+import roslaunch
+import time
 
 # import the Twist message for publishing velocity commands:
 from geometry_msgs.msg import Twist
@@ -15,6 +17,8 @@ from tf.transformations import euler_from_quaternion
 
 # import some useful mathematical operations (and pi), which you may find useful:
 from math import sqrt, pow, pi
+
+
 
 class Square():
     def callback_function(self, topic_data: Odometry):
@@ -85,23 +89,46 @@ class Square():
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdownhook)
 
+        # Create maps folder
+        os.system("mkdir ~/catkin_ws/src/acs6121_team26/maps/")
+
         rospy.loginfo(f"the {node_name} node has been initialised...")
 
+
+    def map_node(self):
+
+        # Launch the map saving node using roslaunch:
+        try:
+            # Generate a UUID and configure ROS logging:
+
+            node = roslaunch.core.Node(
+                package = 'map_server',
+                node_type = 'map_saver',
+                
+                args = '-f /home/student/catkin_ws/src/acs6121_team26/maps/explore_map',
+                name = 'map_saver_test',
+                output='screen',
+            )
+
+
+            # Create a ROSLaunch() object and launch the map saver node:
+            launch = roslaunch.scriptapi.ROSLaunch()
+            launch.start()
+
+            process = launch.launch(node)
+            print (f"Process alive state: {process.is_alive()}")
+
+        except Exception as exception_object:
+            print("(!) There was an error during the 'launch_another_node()' function.")
+            print(f"Error: {exception_object}")
+
+        # Sleep for a short amount of time to allow the map saving node to finish saving the map:
+        time.sleep(2)
+
     def shutdownhook(self):
-        # os.system("roscd acs6121_team26/src")
-        # os.system("rm -rf maps")
-        # os.system("mkdir maps")
-        # os.system("cd maps")
-        os.system("rosrun map_server map_saver -f explore_map")
-        # publish an empty twist message to stop the robot
-        # (by default all velocities will be zero):
         self.pub.publish(Twist())
         self.ctrl_c = True
-
-    def count_squares(self):
-        self.num_squares += 1/4
-        if self.num_squares >2:
-            self.shutdownhook()
+        
 
     def main_loop(self):
         current_yaw = 0.0
@@ -112,6 +139,7 @@ class Square():
             # dimensions 1 x 1m...
 
             #Using a state machine to do so
+
 
             if self.turn:
                 #Turn by 90 degrees
@@ -133,21 +161,24 @@ class Square():
                 current_displacement = current_displacement + sqrt(pow(self.x-self.x0,2)+ pow(self.y-self.y0,2))
                 self.x0 = self.x
                 self.y0 = self.y
-                if current_displacement >= 1:
+                if current_displacement >= 2:
                     #Stop moving forward
                     self.vel = Twist()
                     self.turn = True
                     current_displacement = 0.0
                     self.theta_z0 = self.theta_z
-                    self.count_squares()
+
                 else:
                     #carry on moving forward
-                    self.vel.linear.x = 0.2
+                    self.vel.linear.x = 0.1
+                    #LIDAR SCAN
 
             # publish whatever velocity command has been set in your code above:
             self.pub.publish(self.vel)
             # maintain the loop rate @ 10 hz
             self.rate.sleep()
+            # Launch map node to save the map
+            self.map_node()
 
 if __name__ == "__main__":
     node = Square()
