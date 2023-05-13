@@ -16,7 +16,11 @@
 
 
   <!-- launch the main node -->
-  <node pkg="acs6121_team26" type = "main.py" name="our_main_node" output ="screen"   />
+  <node pkg="acs6121_team26" type="search_server.py" name="explore_server" output="screen"> </node>
+  <node pkg="acs6121_team26" type="search_client.py" name="explore_client" output="screen"> </node>
+
+
+  <!-- <node pkg="acs6121_team26" type = "main.py" name="our_main_node" output ="screen"   /> -->
 
 
   <!-- saving map node -->
